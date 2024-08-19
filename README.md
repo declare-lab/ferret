@@ -30,11 +30,11 @@ python train.py \
 --scoring_function <score_function> \
 ```
 
->  #### Supported Scoring Functions
-> - `LGF`
-> - `Judge`
-> - `Judge+LGF`
-> - `RM`
+#### Supported Scoring Functions
+- `LGF`
+- `Judge`
+- `Judge+LGF`
+- `RM`
 
 
 ## Running Baselines (Optional)
