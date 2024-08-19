@@ -46,6 +46,7 @@ from prompts.prompt_target import *
 from prompts.prompt_risk_description import *
 
 load_dotenv(".hf_token")
+HF_TOKEN = os.getenv("HF_TOKEN")
 
 RISK_CATEGORY = [
     "Violent Crimes",
