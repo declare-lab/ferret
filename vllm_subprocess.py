@@ -87,15 +87,17 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 # Example usage
-LOG_PATH = "logs"
-LOG = True  # Can set to True when debugging
-model_1 = "meta-llama/Meta-Llama-3-8B-Instruct" 
-model_2 = "mistralai/Mistral-7B-Instruct-v0.3"
+LOG_PATH = "logs" # dir to store the vllm server logs
+LOG = True  # whether to log the server outputs
+# Models to host
+model_1 = "mistralai/Mistral-7B-Instruct-v0.3"
+model_2 = "meta-llama/Meta-Llama-3-8B-Instruct" 
 model_3 = "meta-llama/Meta-Llama-Guard-2-8B"
-port_1 = 8001
-port_2 = 8000
+# Port number for each model's server 
+port_1 = 8000
+port_2 = 8001
 port_3 = 8002
-gpu_1 = "3"
+gpu_1 = "0"
 gpu_2 = "1"
 gpu_3 = "2"
 # Start the servers
