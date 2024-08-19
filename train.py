@@ -14,12 +14,6 @@ def main():
         help="Path to the dataset.",
     )
     parser.add_argument(
-        "--dimensions",
-        nargs="+",
-        default=["RISK_CATEGORY", "ATTACK_STYLE"],
-        help="Dimensions to be considered.",
-    )
-    parser.add_argument(
         "--total_iterations", type=int, default=2000, help="Total number of iterations."
     )
     parser.add_argument("--batch_size", type=int, default=10, help="Batch size.")
@@ -91,7 +85,6 @@ def main():
     )
     parser.add_argument(
         "--categorical_filter",
-        type=bool,
         action="store_true",
         help="Whether to apply categorical filtering.",
     )
@@ -116,13 +109,14 @@ def main():
     )
 
     args = parser.parse_args()
+    print(vars(args))
 
     if args.checkpoint:
         archive = Archive(filepath=args.checkpoint)
     else:
         archive = Archive(
             dataset_path=args.dataset_path,
-            dimensions=args.dimensions,
+            dimensions=[RISK_CATEGORY, ATTACK_STYLE],
             total_iterations=args.total_iterations,
             batch_size=args.batch_size,
             target_prompt_type=args.target_prompt_type,

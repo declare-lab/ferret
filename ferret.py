@@ -1,12 +1,9 @@
 import json
-import csv
 import random
 from datetime import datetime
-import subprocess
 import time
 import torch
 import itertools
-import gc
 import numpy as np
 from pathlib import Path
 from dataclasses import dataclass
@@ -23,11 +20,8 @@ import sys
 from copy import deepcopy
 import openai
 from tqdm import tqdm
-from sklearn.metrics import precision_score, recall_score, f1_score
-from vllm import LLM, SamplingParams
 import torch
-import atexit
-import signal
+from dotenv import load_dotenv
 
 import prompts.prompt_evaluation
 import prompts.prompt_judge
@@ -51,6 +45,7 @@ from prompts.prompt_mutation_risk import *
 from prompts.prompt_target import *
 from prompts.prompt_risk_description import *
 
+load_dotenv(".hf_token")
 
 RISK_CATEGORY = [
     "Violent Crimes",
@@ -119,8 +114,8 @@ class Archive:
         set_random_state=True,
         categorical_filter=True,
         log=False,
-        gpt4_eval = False,
-        scoring_function = "RM"
+        gpt4_eval=False,
+        scoring_function="RM",
     ):
         self.dataset_path = dataset_path
         self.dimensions = dimensions
@@ -130,10 +125,10 @@ class Archive:
         self.batch_size = batch_size
         self.bleu_filter = bleu_filter
         self.sampling_temperature = sampling_temperature
-        
+
         self.target_prompt_type = target_prompt_type
         self.judge_samples = judge_samples
-        
+
         self.target_model_name = target_model_name
         self.mistral_model_name = mistral_model_name
         self.llama_guard_model_name = llama_guard_model_name
@@ -145,7 +140,7 @@ class Archive:
         self.save_steps = save_steps
         self.num_mutate = num_mutate
         self.save = save
-        self.set_random_state = set_random_state        
+        self.set_random_state = set_random_state
         self.mistral_port = mistral_port
         self.target_port = target_port
         self.llama_guard_port = llama_guard_port
@@ -162,7 +157,7 @@ class Archive:
         else:
             self.initialize_new_archive()
 
-    #TODO: Check this
+    # TODO: Check this
     def save_random_states(self, filename):
         random_state = random.getstate()
         numpy_state = np.random.get_state()
@@ -414,10 +409,10 @@ class Archive:
         self, model_path, peft_model_id, gpu_device, dtype=torch.bfloat16
     ):
         device = torch.device(f"cuda:{gpu_device}")
-        tokenizer = AutoTokenizer.from_pretrained(peft_model_id)
+        tokenizer = AutoTokenizer.from_pretrained(peft_model_id, token=HF_TOKEN)
 
         base_model = AutoModelForCausalLM.from_pretrained(
-            model_path, torch_dtype=dtype
+            model_path, torch_dtype=dtype, token=HF_TOKEN
         ).to(device)
 
         # Load the PEFT adapter
@@ -528,7 +523,6 @@ class Archive:
         mf_filtered_scores = []
 
         judgments = []
-        
 
         for feature, index in mf_best.items():
             mf_filtered_feature.append(feature)
@@ -538,7 +532,7 @@ class Archive:
             mf_existing_prompts.append(existing_prompts[index])
             mf_existing_response.append(existing_response[index])
             mf_filtered_scores.append(mutation_scores[index])
-            
+
             judgment = (mutation_scores[index] - org_score_map[feature]) > 0
             judgments.append(judgment)
 
@@ -553,12 +547,7 @@ class Archive:
             mf_filtered_scores,
         )
 
-    def mutate_prompt(
-            self,
-            existing_prompt,
-            feature_descriptor, 
-            mistral_client
-            ):
+    def mutate_prompt(self, existing_prompt, feature_descriptor, mistral_client):
 
         # Risk category mutation
         risk_prompts = [
@@ -573,7 +562,6 @@ class Archive:
             print(f"--- risk category prompt ---\n{risk_prompts[0]}\n\n")
         except Exception as e:
             print(e)
-
 
         completion = mistral_client.completions.create(
             model=self.mistral_model_name,
@@ -720,11 +708,13 @@ class Archive:
         )
 
         responses = [i.text for i in completion.choices]
-        
+
         if self.log:
             content = ""
             for prompt, response in zip(input_prompts, responses):
-                content += f"--- prompt ---\n{prompt}\n\n--- response ---\n{response}\n\n"
+                content += (
+                    f"--- prompt ---\n{prompt}\n\n--- response ---\n{response}\n\n"
+                )
             self.print_to_file(file="-interact_with_target_model", content=content)
 
         return responses
@@ -743,7 +733,7 @@ class Archive:
         all_responses = []
 
         # swap orders in judge prompt to account for positional bias
-        for order in range(1, 3):  
+        for order in range(1, 3):
             if order == 1:  # candidate is [[Response 1]]
                 input_prompt = [
                     JUDGE_PROMPT.format(
@@ -800,9 +790,7 @@ class Archive:
             for existing, candidate, responses in zip(
                 existing_response, candidate_response, list(zip(*all_responses))
             ):
-                content += (
-                    f"--- existing ---\n{existing}\n\n--- candidate ---\n{candidate}\n\n"
-                )
+                content += f"--- existing ---\n{existing}\n\n--- candidate ---\n{candidate}\n\n"
                 content += f"--- judge ---\n"
                 for response in responses:
                     content += f"{response}\n"
@@ -848,7 +836,7 @@ class Archive:
         if llama_guard_client == None:
             # Load llama guard client
             llama_guard_client = self.get_vllm_client(self.llama_guard_port)
-        
+
         if gpt4_eval:
             client = AzureOpenAI(
                 azure_endpoint="https://declaregpt4.openai.azure.com/",
@@ -1137,17 +1125,13 @@ class Archive:
         elif self.scoring_function == "LGF":
             self.ferret_lgf()
         else:
-            raise Exception(
-                    f"Unknown Scoring Function: {self.scoring_function}"
-                )
-
-
+            raise Exception(f"Unknown Scoring Function: {self.scoring_function}")
 
     def ferret_lgf(self):
 
         # set up mistral client
         mistral_client = self.get_vllm_client(self.mistral_port)
-        
+
         # set up target client
         target_client = self.get_vllm_client(self.target_port)
 
@@ -1221,15 +1205,20 @@ class Archive:
                 fitness_score = self.get_fitness_score(
                     prompt, response, llama_guard_client
                 )
-                
-# Selecting best using fitness score. Update only if have higher fitness than existing prompt
+
+                # Selecting best using fitness score. Update only if have higher fitness than existing prompt
                 if feature in fitness_results:
                     if fitness_score > fitness_results[feature]:
                         fitness_results[feature] = fitness_score
                     else:
                         continue
                 else:
-                    if fitness_score <= self.archive[self.feature_desciptor_to_index(feature)].fitness:
+                    if (
+                        fitness_score
+                        <= self.archive[
+                            self.feature_desciptor_to_index(feature)
+                        ].fitness
+                    ):
                         continue
                     fitness_results[feature] = fitness_score
 
@@ -1274,7 +1263,7 @@ class Archive:
 
         # set up mistral client
         mistral_client = self.get_vllm_client(self.mistral_port)
-        
+
         # set up target client
         target_client = self.get_vllm_client(self.target_port)
 
@@ -1368,7 +1357,7 @@ class Archive:
                 fitness_score = self.get_fitness_score(
                     prompt, response, llama_guard_client
                 )
-# Selecting best using fitness when there are multiple better candidates for a feature
+                # Selecting best using fitness when there are multiple better candidates for a feature
                 if judgment:
                     if feature in fitness_results:
                         if fitness_score > fitness_results[feature]:
@@ -1419,7 +1408,7 @@ class Archive:
 
         # set up mistral client
         mistral_client = self.get_vllm_client(self.mistral_port)
-        
+
         # set up target client
         target_client = self.get_vllm_client(self.target_port)
 
@@ -1513,7 +1502,7 @@ class Archive:
                 fitness_score = self.get_fitness_score(
                     prompt, response, llama_guard_client
                 )
-# Selecting best using Judge when there are multiple better candidates for a feature
+                # Selecting best using Judge when there are multiple better candidates for a feature
                 if judgment:
                     if feature in features_visited:
                         print(f"Comparing {feature} mutations using Judge")
@@ -1573,7 +1562,7 @@ class Archive:
     def ferret_rm(self):
         # set up mistral client
         mistral_client = self.get_vllm_client(self.mistral_port)
-        
+
         # set up target client
         target_client = self.get_vllm_client(self.target_port)
 
@@ -1737,86 +1726,3 @@ class Archive:
             torch.cuda.empty_cache()
 
         pbar.close()
-
-
-# if __name__ == "__main__":
-
-    # Rainbow Teaming + lg cat Config
-    # archive = Archive(
-    #     dataset_path="harmless-base/train.jsonl",
-    #     dimensions=[RISK_CATEGORY, ATTACK_STYLE],
-    #     total_iterations=4000,
-    #     batch_size=10,
-    #     bleu_filter=0.6,
-    #     sampling_temperature=0.1,
-    #     mutate_risk_type="zero_shot",  # few_shot
-    #     mutate_attack_type="zero_shot",  # few_shot
-    #     target_prompt_type="no_system_prompt",
-    #     judge_samples=2,
-    #     target_model_name="meta-llama/Meta-Llama-3-8B-Instruct",
-    #     mistral_model_name="mistralai/Mistral-7B-Instruct-v0.3",
-    #     llama_guard_model_name="meta-llama/Meta-Llama-Guard-2-8B",
-    #     reward_model_kwargs={"model_path":"meta-llama/Meta-Llama-3-8B", "peft_model_id" : "extras/reward_llama3_rm_responses"},
-    #     mistral_model_device=None,
-    #     target_model_device=None,
-    #     llama_guard_model_device=None,
-    #     reward_model_device=5,
-    #     filepath=None,
-    #     evaluate_steps=100,
-    #     save_steps=100,
-    #     num_mutate=1,
-    #     save=True,
-    #     save_pref_data=False,
-    #     mut_filter = False,
-    #     filter_threshold = -float("inf"),
-    #     save_random_state=False,
-    #     rm_as_judge = False,
-    #     lg_cat_filter = True
-    # )
-    # input()
-
-    # Ferret Config
-    # archive = Archive(
-    #     dataset_path="harmless-base/train.jsonl",
-    #     dimensions=[RISK_CATEGORY, ATTACK_STYLE],
-    #     total_iterations=4000,
-    #     batch_size=10,
-    #     bleu_filter=0.6,
-    #     sampling_temperature=0.1,
-    #     mutate_risk_type="zero_shot",  # few_shot
-    #     mutate_attack_type="zero_shot",  # few_shot
-    #     target_prompt_type="no_system_prompt",
-    #     judge_samples=2,
-    #     target_model_name="meta-llama/Meta-Llama-3-8B-Instruct",
-    #     mistral_model_name="mistralai/Mistral-7B-Instruct-v0.3",
-    #     llama_guard_model_name="meta-llama/Meta-Llama-Guard-2-8B",
-    #     reward_model_kwargs={
-    #         "model_path": "meta-llama/Meta-Llama-3-8B",
-    #         "peft_model_id": "extras/reward_llama3_rm_responses",
-    #     },
-    #     mistral_model_device=None,
-    #     target_model_device=None,
-    #     llama_guard_model_device=None,
-    #     reward_model_device=3,
-    #     filepath=None,
-    #     evaluate_steps=100,
-    #     save_steps=100,
-    #     num_mutate=5,
-    #     save=True,
-    #     save_pref_data=False,
-    #     mut_filter=True,
-    #     filter_threshold=-float("inf"),
-    #     save_random_state=False,
-    #     rm_as_judge=True,
-    #     lg_cat_filter=True,
-    # )
-    # input()
-
-    # archive = Archive(filepath="training_archive/timed_ferret2")  # --> llama 3
-    # archive = Archive(filepath="training_archive/timed_raincat2")  # --> llama 3
-    # # archive.evaluate_archive()
-    # try:
-    #     archive.rainbow_teaming()
-    # except BaseException as e:
-    #     archive.save_archive()
-    #     raise e

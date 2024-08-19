@@ -1,23 +1,31 @@
 # Ferret: Faster and Effective Automated Red Teaming with Reward-Based Scoring Technique
 
-# Setup
 
+## Setup
 ```
 conda create -n ferret python=3.10 -y
 conda activate ferret
 pip install -r requirements.txt
 ```
 
-# Experiments
-## Step 1: Set up vLLM server
+
+## Experiments
+You will require at least 4 A40 40GB GPUs to run the experiments.
+
+### Step 1: Create a `.hf_token` File:
+Create a .hf_token file in root directory\. Add your Hugging Face token to this file:
+```
+HF_TOKEN=<hf_token>
+```
+
+### Step 2: Set up vLLM server
 ```
 python vllm_subprocess.py
 ```
 
-
-## Step 2: Running Ferret Variants
+### Step 3: Running Ferret Variants
 ```
-python train_ferret \
+python train.py \
 --categorical_filter \
 --scoring_function <score_function> \
 ```
@@ -30,16 +38,22 @@ python train_ferret \
 
 
 ## Running Baselines (Optional)
-### Rainbow Teaming (default)
+
+### Step 1: Set up vLLM server
 ```
-python train \
+python vllm_subprocess.py
+```
+
+### Step 2(a): Rainbow Teaming (default)
+```
+python train.py \
 --num_mutate 1 \
 --scoring_function Judge \
 ```
 
-### Rainbow Teaming (+CF)
+### Step 2(b): Rainbow Teaming (+CF)
 ```
-python train \
+python train.py \
 --num_mutate 1 \
 --categorical_filter \
 --scoring_function Judge \
