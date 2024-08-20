@@ -62,7 +62,7 @@ python train.py \
 ## Reward Model Finetuning
 
 ### Step 1: Setup Llama-Factory
-Clone the [Llama-Factory](https://github.com/hiyouga/LLaMA-Factory) repository and follow the instructions to set up the environment. Once setup, copy the training data `reward_model_training/rm_train_data.json` to the data folder in Llama-Factory repository and update `dataset_info.json` file in the data folder.
+Clone the [Llama-Factory](https://github.com/hiyouga/LLaMA-Factory) repository and follow the instructions to set up the environment. Unzip and copy the training data `reward_model_training/rm_train_data.zip` to the data folder in Llama-Factory repository and update `dataset_info.json` file in the data folder.
 
 ### Step 2: Training the reward model
 Run the following command to start the Reward Model Training. The deepspeed config is provided in the `reward_model_training` folder.
