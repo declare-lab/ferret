@@ -839,10 +839,11 @@ class Archive:
             llama_guard_client = self.get_vllm_client(self.llama_guard_port)
 
         if gpt4_eval:
+            # ADD GPT-4 API details here
             client = AzureOpenAI(
-                azure_endpoint="https://declaregpt4.openai.azure.com/",
+                azure_endpoint="<Azure Endpoint>",
                 api_key=os.getenv("AZURE_OPENAI_KEY"),
-                api_version="2024-02-15-preview",
+                api_version="<API Version>",
             )
 
             gpt4_asr = []
