@@ -1,5 +1,6 @@
 # Ferret: Faster and Effective Automated Red Teaming with Reward-Based Scoring Technique
 
+[![paper](https://img.shields.io/badge/arxiv-2408.10701-b31b1b)](https://arxiv.org/abs/2408.10701)
 
 ## Setup
 ```
