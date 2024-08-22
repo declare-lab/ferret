@@ -1,6 +1,19 @@
-# Ferret: Faster and Effective Automated Red Teaming with Reward-Based Scoring Technique
+<h1>
+  <img src="figures/ferret-image.png" alt="Ferret" width="30" style="vertical-align: middle;"/> 
+  Ferret: Faster and Effective Automated Red Teaming with Reward-Based Scoring Technique
+</h1>
 
 [![paper](https://img.shields.io/badge/arxiv-2408.10701-b31b1b)](https://arxiv.org/abs/2408.10701)
+
+## Overview
+In today's era, where large language models (LLMs) are integrated into numerous real-world applications, ensuring their safety and robustness is crucial for responsible AI usage. Automated red-teaming methods play a key role in this process by generating adversarial attacks to identify and mitigate potential vulnerabilities in these models. However, existing methods often struggle with slow performance, limited categorical diversity, and high resource demands. While Rainbow Teaming, a recent approach, addresses the diversity challenge by framing adversarial prompt generation as a quality-diversity search, it remains slow and requires a large fine-tuned mutator for optimal performance. To overcome these limitations, we propose Ferret, a novel approach that builds upon Rainbow Teaming by generating multiple adversarial prompt mutations per iteration and using a scoring function to rank and select the most effective adversarial prompt. We explore various scoring functions, including reward models, Llama Guard, and LLM-as-a-judge, to rank adversarial mutations based on their potential harm to improve the efficiency of the search for harmful mutations. 
+
+An Overview of the Ferret Framework is shown as follows: 
+
+![Ferret Methodology](figures/ferret_diagram.png)
+
+
+Overall, our results demonstrate that Ferret, utilizing a reward model as a scoring function, improves the overall attack success rate (ASR) to 95%, which is 46% higher than Rainbow Teaming. Additionally, Ferret reduces the time needed to achieve a 90% ASR by 15.2% compared to the baseline and generates adversarial prompts that are transferable i.e. effective on other LLMs of larger size.
 
 ## Setup
 ```
